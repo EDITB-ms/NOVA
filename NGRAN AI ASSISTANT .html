@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nova AI | LiveKit Real-time</title>
+    <script src="https://unpkg.com/livekit-client/dist/livekit-client.umd.min.js"></script>
+    <style>
+        :root { --primary: #00d2ff; --bg: #020617; }
+        body { 
+            background: var(--bg); color: white; font-family: 'Inter', sans-serif;
+            display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0;
+        }
+        .container { text-align: center; background: rgba(255,255,255,0.05); padding: 40px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); width: 400px; }
+        .orb {
+            width: 150px; height: 150px; border-radius: 50%; margin: 0 auto 30px;
+            background: radial-gradient(circle, var(--primary), #3a7bd5);
+            box-shadow: 0 0 30px rgba(0, 210, 255, 0.3);
+            transition: 0.3s;
+        }
+        .active .orb { transform: scale(1.2); box-shadow: 0 0 60px rgba(0, 210, 255, 0.8); animation: pulse 1.5s infinite; }
+        button {
+            background: var(--primary); border: none; padding: 15px 30px; border-radius: 50px;
+            color: white; font-weight: bold; cursor: pointer; font-size: 1rem;
+        }
+        #status { margin-top: 20px; color: var(--primary); font-size: 0.8rem; letter-spacing: 1px; }
+        @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
+    </style>
+</head>
+<body>
+
+<div class="container" id="box">
+    <div class="orb"></div>
+    <h1>NGRAN</h1>
+    <p>LiveKit WebRTC Agent</p>
+    <button id="start-btn">CONNECT TO AGENT</button>
+    <div id="status">OFFLINE</div>
+</div>
+
+<script>
+    const btn = document.getElementById('start-btn');
+    const box = document.getElementById('box');
+    const status = document.getElementById('status');
+
+    async function startConversation() {
+        status.innerText = "CONNECTING...";
+        
+        // 1. You would typically get this token from your backend
+        // For testing, you can generate a temporary token in the LiveKit Dashboard
+        const TOKEN = "YOUR_LIVEKIT_TOKEN"; 
+        const URL = "wss://YOUR_PROJECT_URL.livekit.cloud";
+
+        const room = new LiveKit.Room();
+        
+        // Handle Audio
+        room.on(LiveKit.RoomEvent.TrackSubscribed, (track) => {
+            if (track.kind === 'audio') {
+                track.attach(); // Play AI voice
+                box.classList.add('active');
+                status.innerText = "AGENT SPEAKING";
+            }
+        });
+
+        room.on(LiveKit.RoomEvent.TrackUnsubscribed, (track) => {
+            box.classList.remove('active');
+            status.innerText = "AGENT LISTENING";
+        });
+
+        try {
+            await room.connect(URL, TOKEN);
+            status.innerText = "CONNECTED";
+            
+            // Turn on user microphone
+            await room.localParticipant.setMicrophoneEnabled(true);
+            
+            btn.innerText = "DISCONNECT";
+            btn.onclick = () => room.disconnect();
+        } catch (error) {
+            console.error(error);
+            status.innerText = "CONNECTION FAILED";
+        }
+    }
+
+    btn.onclick = startConversation;
+</script>
+
+</body>
+</html>
